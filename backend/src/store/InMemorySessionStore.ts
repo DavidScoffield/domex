@@ -1,72 +1,78 @@
-import { type UserID, type RoomID, type Rooms, type Session, type SessionID } from '../types.js'
-import { type RoomSessionStore } from './RoomSessionStore.js'
+import {
+  type NodeID,
+  type ClusterID,
+  type Clusters,
+  type Session,
+  type SessionID,
+} from '../types.js'
+import { type ClusterSessionStore } from './ClusterSessionStore.js'
 
-export class InMemoryRoomSessionStore implements RoomSessionStore {
-  rooms!: Rooms
+export class InMemoryClusterSessionStore implements ClusterSessionStore {
+  clusters!: Clusters
 
   constructor() {
-    this.rooms = new Map()
+    this.clusters = new Map()
   }
 
-  findSession = (roomID: RoomID, sessionID: SessionID): Session | undefined => {
-    const room = this.rooms.get(roomID)
-    if (!room) return undefined
-    return room.sessions.get(sessionID)
+  findSession = (clusterID: ClusterID, sessionID: SessionID): Session | undefined => {
+    const cluster = this.clusters.get(clusterID)
+    if (!cluster) return undefined
+    return cluster.sessions.get(sessionID)
   }
 
-  saveSession = (roomID: RoomID, sessionID: SessionID, session: Session): void => {
-    const room = this.rooms.get(roomID)
-    if (!room) {
-      const newRoom = { sessions: new Map([[sessionID, session]]), locked: false }
-      this.rooms.set(roomID, newRoom)
+  saveSession = (clusterID: ClusterID, sessionID: SessionID, session: Session): void => {
+    const cluster = this.clusters.get(clusterID)
+    if (!cluster) {
+      const newCluster = { sessions: new Map([[sessionID, session]]), locked: false }
+      this.clusters.set(clusterID, newCluster)
     } else {
-      room.sessions.set(sessionID, session)
+      cluster.sessions.set(sessionID, session)
     }
   }
 
-  findAllSessions = (roomID: RoomID): Session[] => {
-    const room = this.rooms.get(roomID)
-    if (!room) return []
-    return [...room.sessions.values()]
+  findAllSessions = (clusterID: ClusterID): Session[] => {
+    const cluster = this.clusters.get(clusterID)
+    if (!cluster) return []
+    return [...cluster.sessions.values()]
   }
 
-  removeSession = (roomID: RoomID, sessionID: SessionID): void => {
-    const room = this.rooms.get(roomID)
-    if (!room) return
-    room.sessions.delete(sessionID)
+  removeSession = (clusterID: ClusterID, sessionID: SessionID): void => {
+    const cluster = this.clusters.get(clusterID)
+    if (!cluster) return
+    cluster.sessions.delete(sessionID)
   }
 
-  removeRoom = (roomID: RoomID): void => {
-    this.rooms.delete(roomID)
+  removeCluster = (clusterID: ClusterID): void => {
+    this.clusters.delete(clusterID)
   }
 
-  existsRoom = (roomID: RoomID): boolean => {
-    return this.rooms.has(roomID)
+  existsCluster = (clusterID: ClusterID): boolean => {
+    return this.clusters.has(clusterID)
   }
 
-  isUniqueNodeName = (roomID: RoomID, userName: string): boolean => {
-    const room = this.rooms.get(roomID)
+  isUniqueNodeName = (clusterID: ClusterID, nodeName: string): boolean => {
+    const cluster = this.clusters.get(clusterID)
 
-    if (!room) return true
+    if (!cluster) return true
 
-    return ![...room.sessions.values()].some((session) => session.userName === userName)
+    return ![...cluster.sessions.values()].some((session) => session.nodeName === nodeName)
   }
 
-  kickUser = (roomID: RoomID, userID: UserID): void => {
-    const room = this.rooms.get(roomID)
-    if (!room) return
-    const sessionID = [...room.sessions.entries()].find(
-      ([_, session]) => session.userID === userID,
+  kickNode = (clusterID: ClusterID, nodeID: NodeID): void => {
+    const cluster = this.clusters.get(clusterID)
+    if (!cluster) return
+    const sessionID = [...cluster.sessions.entries()].find(
+      ([_, session]) => session.nodeID === nodeID,
     )?.[0]
     if (!sessionID) return
-    room.sessions.delete(sessionID)
+    cluster.sessions.delete(sessionID)
   }
 
-  toggleRoomLock = (roomID: RoomID, lock: boolean): void => {
-    const room = this.rooms.get(roomID)
-    if (!room) return
-    room.locked = lock
+  toggleClusterLock = (clusterID: ClusterID, lock: boolean): void => {
+    const cluster = this.clusters.get(clusterID)
+    if (!cluster) return
+    cluster.locked = lock
   }
 
-  isLocked = (roomID: RoomID): boolean => !!this.rooms.get(roomID)?.locked
+  isLocked = (clusterID: ClusterID): boolean => !!this.clusters.get(clusterID)?.locked
 }

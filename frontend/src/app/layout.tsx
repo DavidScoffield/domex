@@ -3,7 +3,7 @@ import AlertModal from '@/components/ui/AlertModal'
 import { AlertModalProvider } from '@/context/AlertModalContext'
 import { FilesProvider } from '@/context/FilesContext'
 import { MapReduceProvider } from '@/context/MapReduceContext'
-import { RoomProvider } from '@/context/RoomContext'
+import { ClusterProvider } from '@/context/ClusterContext'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
@@ -28,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang='en'>
       <body className={`${inter.className} h-screen m-0`}>
         <AlertModalProvider>
-          <RoomProvider>
+          <ClusterProvider>
             <MapReduceProvider MapReduceJobCode={MapReduceJobCode}>
               <FilesProvider>
                 {children}
@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <AlertModal />
               </FilesProvider>
             </MapReduceProvider>
-          </RoomProvider>
+          </ClusterProvider>
         </AlertModalProvider>
         <CompatibilityChecker />
       </body>

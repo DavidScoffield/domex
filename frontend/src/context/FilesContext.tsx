@@ -1,13 +1,13 @@
 'use client'
 
-import { UserID } from '@/types'
+import { NodeID } from '@/types'
 import { PropsWithChildren, createContext, useState } from 'react'
 
 export type FilesContextType = {
   selectedFiles: File[]
   setSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>
-  nodesFiles: Record<UserID, string[]> // UserID -> [nameFile, nameFile, ...]
-  setNodesFiles: React.Dispatch<React.SetStateAction<Record<UserID, string[]>>>
+  nodesFiles: Record<NodeID, string[]> // NodeID -> [nameFile, nameFile, ...]
+  setNodesFiles: React.Dispatch<React.SetStateAction<Record<NodeID, string[]>>>
 }
 
 const FilesContext = createContext<FilesContextType>({
@@ -19,7 +19,7 @@ const FilesContext = createContext<FilesContextType>({
 
 export const FilesProvider: React.FC<PropsWithChildren> = ({ children }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [nodesFiles, setNodesFiles] = useState<Record<UserID, string[]>>({})
+  const [nodesFiles, setNodesFiles] = useState<Record<NodeID, string[]>>({})
 
   return (
     <FilesContext.Provider

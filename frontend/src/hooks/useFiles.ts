@@ -1,28 +1,28 @@
 import FilesContext from '@/context/FilesContext'
 import { Action, actionTypes } from '@/context/MapReduceContext'
-import { Tree, UserID } from '@/types'
+import { Tree, NodeID } from '@/types'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import usePeers from './usePeers'
-import useRoom from './useRoom'
+import useCluster from './useCluster'
 import { socket } from '@/socket'
 
 const useFiles = (loading: boolean = false) => {
   const { selectedFiles, setSelectedFiles, nodesFiles, setNodesFiles } = useContext(FilesContext)
   const { broadcastMessage, sendFile } = usePeers()
-  const { clusterUsers, roomSession } = useRoom()
+  const { clusterNodes, clusterSession } = useCluster()
 
   const ownFileTree: Tree = useMemo(
     () => ({
       name: '/ (local)',
       isFolder: true,
       isLocal: true,
-      ownerId: socket.userID,
+      ownerId: socket.nodeID,
       items: selectedFiles.map((file) => {
         return {
           isLocal: true,
           name: file.name,
           isFolder: false,
-          ownerId: socket.userID,
+          ownerId: socket.nodeID,
         }
       }),
     }),
@@ -31,31 +31,31 @@ const useFiles = (loading: boolean = false) => {
 
   const nodesFileTree: Tree[] = useMemo(
     () => [
-      ...Object.entries(nodesFiles).map(([userId, fileNames]) => {
-        const username = clusterUsers.find((user) => user.userID === userId)?.userName
+      ...Object.entries(nodesFiles).map(([nodeID, fileNames]) => {
+        const nodename = clusterNodes.find((node) => node.nodeID === nodeID)?.nodeName
 
         return {
-          name: `/ ${username} (remote)`,
+          name: `/ ${nodename} (remote)`,
           isFolder: true,
-          ownerId: userId as UserID,
+          ownerId: nodeID as NodeID,
           items: fileNames.map((file) => {
             return {
               name: file,
               isFolder: false,
-              ownerId: userId as UserID,
+              ownerId: nodeID as NodeID,
             }
           }),
         }
       }),
     ],
-    [clusterUsers, nodesFiles],
+    [clusterNodes, nodesFiles],
   )
 
   const nodeHasFiles = !!ownFileTree.items?.length
 
   const fileTrees = useMemo(
-    () => (!roomSession?.isRoomOwner ? [ownFileTree, ...nodesFileTree] : [...nodesFileTree]),
-    [nodesFileTree, ownFileTree, roomSession?.isRoomOwner],
+    () => (!clusterSession?.isMaster ? [ownFileTree, ...nodesFileTree] : [...nodesFileTree]),
+    [nodesFileTree, ownFileTree, clusterSession?.isMaster],
   )
 
   const [mapNodesCount, setMapNodesCount] = useState(fileTrees.length)
@@ -65,35 +65,35 @@ const useFiles = (loading: boolean = false) => {
   }, [fileTrees, loading])
 
   useEffect(() => {
-    if (roomSession?.isRoomOwner) return
+    if (clusterSession?.isMaster) return
 
     // Broadcast own files to all peers
     const fileNames = selectedFiles.map((file) => file.name)
     broadcastMessage({ type: 'UPDATE_FILES', payload: { fileNames } })
-  }, [broadcastMessage, roomSession?.isRoomOwner, selectedFiles])
+  }, [broadcastMessage, clusterSession?.isMaster, selectedFiles])
 
   useEffect(() => {
-    if (!roomSession) setSelectedFiles([])
-  }, [roomSession, setSelectedFiles])
+    if (!clusterSession) setSelectedFiles([])
+  }, [clusterSession, setSelectedFiles])
 
   useEffect(() => {
     // Remove files from nodes that are no longer in the cluster, or are disconnected
     setNodesFiles((prevFiles) => {
       const newFiles = { ...prevFiles }
-      const nodeUserIDs = Object.keys(prevFiles) as UserID[]
+      const nodeNodeIDs = Object.keys(prevFiles) as NodeID[]
 
-      nodeUserIDs.forEach((userID) => {
-        const userInCluster = clusterUsers.find((user) => user.userID === userID)
-        const userConnected = userInCluster?.socketConnected
+      nodeNodeIDs.forEach((nodeID) => {
+        const nodeInCluster = clusterNodes.find((node) => node.nodeID === nodeID)
+        const nodeConnected = nodeInCluster?.socketConnected
 
-        if (!userInCluster || !userConnected) {
-          delete newFiles[userID]
+        if (!nodeInCluster || !nodeConnected) {
+          delete newFiles[nodeID]
         }
       })
 
       return newFiles
     })
-  }, [clusterUsers, setNodesFiles])
+  }, [clusterNodes, setNodesFiles])
 
   const deleteFile = (tree: Tree) => {
     setSelectedFiles((prevFiles) => prevFiles.filter((file) => file.name !== tree.name))
@@ -111,9 +111,9 @@ const useFiles = (loading: boolean = false) => {
     [setSelectedFiles],
   )
 
-  const addFilesFromMaster = async (files: File[], userID: UserID) => {
+  const addFilesFromMaster = async (files: File[], nodeID: NodeID) => {
     for (const file of files) {
-      sendFile(userID, file)
+      sendFile(nodeID, file)
     }
   }
 
@@ -122,7 +122,7 @@ const useFiles = (loading: boolean = false) => {
       switch (action.type) {
         case actionTypes.UPDATE_FILES:
           setNodesFiles((prevFiles) => {
-            return { ...prevFiles, [action.userID as UserID]: action.payload.fileNames }
+            return { ...prevFiles, [action.nodeID as NodeID]: action.payload.fileNames }
           })
           break
 

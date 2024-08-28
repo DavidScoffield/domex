@@ -1,7 +1,7 @@
 import { ENVS } from '@/constants/envs'
-import RoomContext from '@/context/RoomContext'
+import ClusterContext from '@/context/ClusterContext'
 import { socket } from '@/socket'
-import { UserID } from '@/types'
+import { NodeID } from '@/types'
 import { getIceServers } from '@/utils/iceServers'
 import { useCallback, useContext } from 'react'
 import SimplePeer, { SignalData } from 'simple-peer'
@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid'
 const CHUNK_SIZE = ENVS.GENERAL.CHUNK_SIZE
 
 const usePeers = () => {
-  const { peers, setPeers } = useContext(RoomContext)
+  const { peers, setPeers } = useContext(ClusterContext)
 
   const destroyPeers = useCallback(() => {
     const peersValues = Object.values(peers)
@@ -22,11 +22,11 @@ const usePeers = () => {
   }, [peers, setPeers])
 
   const deletePeer = useCallback(
-    (userID: UserID) => {
-      peers[userID]?.destroy()
+    (nodeID: NodeID) => {
+      peers[nodeID]?.destroy()
       setPeers((peers) => {
         const newPeers = { ...peers }
-        delete newPeers[userID]
+        delete newPeers[nodeID]
         return newPeers
       })
     },
@@ -34,8 +34,8 @@ const usePeers = () => {
   )
 
   const sendDirectMessage = useCallback(
-    (userID: UserID, data: any) => {
-      const peer = peers[userID]
+    (nodeID: NodeID, data: any) => {
+      const peer = peers[nodeID]
       if (!peer) return 0
 
       const payloadSize = data.payload ? Buffer.byteLength(JSON.stringify(data.payload)) : 0
@@ -60,8 +60,8 @@ const usePeers = () => {
   )
 
   const sendFile = useCallback(
-    async (userID: UserID, file: File) => {
-      const peer = peers[userID]
+    async (nodeID: NodeID, file: File) => {
+      const peer = peers[nodeID]
       if (!peer) return
 
       const fileUUID = uuidv4()
@@ -70,7 +70,7 @@ const usePeers = () => {
         payload: { uuid: fileUUID, name: file.name },
       }
 
-      sendDirectMessage(userID, fileNameMessage)
+      sendDirectMessage(nodeID, fileNameMessage)
 
       const arrayBuffer = await file.arrayBuffer()
       const totalChunks = Math.ceil(arrayBuffer.byteLength / CHUNK_SIZE)
@@ -96,14 +96,14 @@ const usePeers = () => {
 
   const broadcastMessage = useCallback(
     (data: any) => {
-      Object.keys(peers).forEach((userID) => {
-        sendDirectMessage(userID as UserID, data)
+      Object.keys(peers).forEach((nodeID) => {
+        sendDirectMessage(nodeID as NodeID, data)
       })
     },
     [peers, sendDirectMessage],
   )
 
-  const createPeer = useCallback((userToSignal: UserID, callerID: UserID) => {
+  const createPeer = useCallback((nodeToSignal: NodeID, callerID: NodeID) => {
     const peer = new SimplePeer({
       initiator: true,
       trickle: false,
@@ -113,13 +113,13 @@ const usePeers = () => {
     })
 
     peer.on('signal', (signal) => {
-      socket.emit('webrtc:sending-signal', { userToSignal, callerID, signal })
+      socket.emit('webrtc:sending-signal', { nodeToSignal, callerID, signal })
     })
 
     return peer
   }, [])
 
-  const addPeer = useCallback((incomingSignal: SignalData, callerID: UserID) => {
+  const addPeer = useCallback((incomingSignal: SignalData, callerID: NodeID) => {
     const peer = new SimplePeer({
       initiator: false,
       trickle: false,

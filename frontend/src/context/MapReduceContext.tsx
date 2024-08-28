@@ -1,8 +1,8 @@
 'use client'
 
 import { placeholdersFunctions } from '@/constants/functionCodes'
-import useRoom from '@/hooks/useRoom'
-import { Code, KeyValuesCount, Output, ReducerState, Sizes, Tree, UserID } from '@/types'
+import useCluster from '@/hooks/useCluster'
+import { Code, KeyValuesCount, Output, ReducerState, Sizes, Tree, NodeID } from '@/types'
 import { average } from '@/utils/helpers'
 import { createContext, useReducer } from 'react'
 
@@ -30,8 +30,8 @@ export const actionTypes = {
 } as const
 
 export type Action = {
-  userID?: UserID
-  userName?: string
+  nodeID?: NodeID
+  nodeName?: string
   payloadSize?: number
 } & (
   | { type: 'SET_CODES'; payload: ReducerState['code'] }
@@ -180,7 +180,7 @@ const MapReduceContext = createContext<MapReduceContextType>({
 })
 
 const reducer = (state: ReducerState, action: Action) => {
-  const userID = action.userID as UserID
+  const nodeID = action.nodeID as NodeID
   switch (action.type) {
     case actionTypes.RESET_READY_TO_EXECUTE:
       return {
@@ -201,11 +201,11 @@ const reducer = (state: ReducerState, action: Action) => {
         ...state,
         combineResults: {
           ...state.combineResults,
-          [userID]: action.payload.combineResults,
+          [nodeID]: action.payload.combineResults,
         },
         mapResults: {
           ...state.mapResults,
-          [userID]: action.payload.mapResults,
+          [nodeID]: action.payload.mapResults,
         },
       }
     case actionTypes.EJECUTAR_REDUCE:
@@ -225,7 +225,7 @@ const reducer = (state: ReducerState, action: Action) => {
         },
         clavesRecibidas: {
           ...state.clavesRecibidas,
-          [userID]: action.payload,
+          [nodeID]: action.payload,
         },
       }
     case actionTypes.RESULTADO_FINAL:
@@ -314,7 +314,7 @@ const reducer = (state: ReducerState, action: Action) => {
           .split('\n') // Split the stdout into lines
           .map((line) => line.trim()) // Remove leading/trailing whitespace from each line
           .filter((line) => line) // Remove empty lines (lines that are just whitespace
-          .map((line) => (action.userName ? `Node ${action.userName}: ${line}` : line)) // Add the username to each line
+          .map((line) => (action.nodeName ? `Node ${action.nodeName}: ${line}` : line)) // Add the nodename to each line
           .join('\n') + '\n' // Join the lines back together and add a newline at the end
 
       const newStdoutState = state.output.stdout + stdout
@@ -339,9 +339,9 @@ const reducer = (state: ReducerState, action: Action) => {
 
       let stderr = action.payload
 
-      if (action.userName) {
+      if (action.nodeName) {
         if (errors) {
-          const newError = `Node ${action.userName}: ${errors}\n`
+          const newError = `Node ${action.nodeName}: ${errors}\n`
           errors = state.errors + newError
           const detectedError = Object.keys(action.payload).find(
             (code) => !!action.payload[code as keyof Code],
@@ -386,8 +386,8 @@ export const MapReduceProvider: React.FC<MapReduceProviderProps> = ({
   children,
   MapReduceJobCode,
 }) => {
-  const { clusterUsers } = useRoom()
-  initialState.totalNodes = clusterUsers.length
+  const { clusterNodes } = useCluster()
+  initialState.totalNodes = clusterNodes.length
   const [mapReduceState, dispatchMapReduce] = useReducer(reducer, initialState)
 
   return (

@@ -1,32 +1,32 @@
 import { Action, actionTypes } from '@/context/MapReduceContext'
-import { User } from '@/types'
+import { Node } from '@/types'
 
 export function handleActionSignal({
   action,
-  setClusterUsers,
+  setClusterNodes,
 }: {
   action: Action
-  setClusterUsers: React.Dispatch<React.SetStateAction<User[]>>
+  setClusterNodes: React.Dispatch<React.SetStateAction<Node[]>>
 }) {
   switch (action.type) {
     case actionTypes.SET_READY_TO_EXECUTE:
-      setClusterUsers((clusterUsers) =>
-        clusterUsers.map((user) => {
-          if (user.userID === action.userID) {
-            return { ...user, readyToExecuteMap: action.payload }
+      setClusterNodes((clusterNodes) =>
+        clusterNodes.map((node) => {
+          if (node.nodeID === action.nodeID) {
+            return { ...node, readyToExecuteMap: action.payload }
           }
-          return user
+          return node
         }),
       )
       break
 
     case actionTypes.SET_EXECUTION_STATUS:
-      setClusterUsers((clusterUsers) =>
-        clusterUsers.map((user) => {
-          if (user.userID === action.userID) {
-            return { ...user, executionStatus: action.payload }
+      setClusterNodes((clusterNodes) =>
+        clusterNodes.map((node) => {
+          if (node.nodeID === action.nodeID) {
+            return { ...node, executionStatus: action.payload }
           }
-          return user
+          return node
         }),
       )
       break

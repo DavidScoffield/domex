@@ -39,7 +39,7 @@ services:
       NODE_ENV: production
       PORT: ${BACK_INTERNAL_PORT:-5000}
       HOST: 0.0.0.0
-      ROOM_IDS_LENGTH: ${ROOM_IDS_LENGTH:-5}
+      CLUSTER_IDS_LENGTH: ${CLUSTER_IDS_LENGTH:-5}
     networks:
       - domex
 

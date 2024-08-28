@@ -11,9 +11,9 @@ import useFiles from '@/hooks/useFiles'
 import useMapReduce from '@/hooks/useMapReduce'
 import usePeers from '@/hooks/usePeers'
 import { usePythonCodeValidator } from '@/hooks/usePythonCodeValidator'
-import useRoom from '@/hooks/useRoom'
+import useCluster from '@/hooks/useCluster'
 import useStatistics from '@/hooks/useStatisticts'
-import { FinalResults, KeyValuesCount, ReducerState, Tree, UserID, UserResults } from '@/types'
+import { FinalResults, KeyValuesCount, ReducerState, Tree, NodeID, NodeResults } from '@/types'
 import { LoadingButton } from '@mui/lab'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -44,10 +44,10 @@ const initialFinalResults: FinalResults = {
 }
 
 export default function Master() {
-  const { clusterUsers, roomSession, toggleRoomLock } = useRoom()
+  const { clusterNodes, clusterSession, toggleClusterLock } = useCluster()
   const { mapReduceState, dispatchMapReduce } = useMapReduce()
   const { sendDirectMessage, broadcastMessage } = usePeers()
-  const [allUsersReady, setAllUsersReady] = useState(false)
+  const [allNodesReady, setAllNodesReady] = useState(false)
   const [finalResults, setFinalResults] = useState<FinalResults>(initialFinalResults)
   const [isLoading, setIsLoading] = useState(false)
   const [finished, setFinished] = useState(false)
@@ -70,7 +70,7 @@ export default function Master() {
     setFinalResults(initialFinalResults)
   }
 
-  const getTotalCounts = (totalCounts: KeyValuesCount, result: UserResults) =>
+  const getTotalCounts = (totalCounts: KeyValuesCount, result: NodeResults) =>
     Object.values(result).forEach((keyList) => {
       Object.entries(keyList).forEach(([key, count]) => {
         totalCounts[key] = (totalCounts[key] || 0) + count
@@ -85,25 +85,25 @@ export default function Master() {
   useEffect(() => {
     if (mapReduceState.resetReadyToExecute <= 0) return
     setIsLoading(false)
-    toggleRoomLock(false)
-  }, [mapReduceState.resetReadyToExecute, toggleRoomLock])
+    toggleClusterLock(false)
+  }, [mapReduceState.resetReadyToExecute, toggleClusterLock])
 
   useEffect(
     () =>
-      setFinished(clusterUsers.length > 0 && mapReduceState.finishedNodes === clusterUsers.length),
-    [clusterUsers.length, mapReduceState.finishedNodes],
+      setFinished(clusterNodes.length > 0 && mapReduceState.finishedNodes === clusterNodes.length),
+    [clusterNodes.length, mapReduceState.finishedNodes],
   )
 
   useEffect(() => {
     if (!finished) return
 
     setIsLoading(false)
-    toggleRoomLock(false)
-  }, [finished, toggleRoomLock])
+    toggleClusterLock(false)
+  }, [finished, toggleClusterLock])
 
   const handleIniciarProcesamiento = async () => {
     if (!isReady) return
-    if (!allUsersReady) return
+    if (!allNodesReady) return
 
     const isValidPythonCodePromise = isValidPythonCode(code)
 
@@ -118,7 +118,7 @@ export default function Master() {
 
     if (!(await isValidPythonCodePromise)) return
 
-    toggleRoomLock(true)
+    toggleClusterLock(true)
     resetState()
     const action: Action = { type: 'SET_CODES', payload: code }
     broadcastMessage(action)
@@ -127,16 +127,16 @@ export default function Master() {
   }
 
   useEffect(() => {
-    const totalUsers = clusterUsers.length
-    const readyUsers = clusterUsers.filter((user) => user.readyToExecuteMap).length
-    setAllUsersReady(totalUsers > 0 && totalUsers === readyUsers)
-  }, [clusterUsers])
+    const totalNodes = clusterNodes.length
+    const readyNodes = clusterNodes.filter((node) => node.readyToExecuteMap).length
+    setAllNodesReady(totalNodes > 0 && totalNodes === readyNodes)
+  }, [clusterNodes])
 
   useEffect(() => {
     // If all the combine results are in, then we can start the reduce phase. Check if isn´t finished yet
     if (finished || !isLoading) return
     if (!Object.keys(mapReduceState.combineResults).length) return
-    if (Object.keys(mapReduceState.combineResults).length < clusterUsers.length) return
+    if (Object.keys(mapReduceState.combineResults).length < clusterNodes.length) return
 
     // Count the total of each key for all the map results
     const mapTotalCount: KeyValuesCount = {}
@@ -146,71 +146,71 @@ export default function Master() {
     const combineTotalCount: KeyValuesCount = {}
     getTotalCounts(combineTotalCount, mapReduceState.combineResults)
 
-    const users = Object.keys(mapReduceState.combineResults) as UserID[]
+    const nodes = Object.keys(mapReduceState.combineResults) as NodeID[]
     const keys = Object.keys(combineTotalCount)
-    const keysPerUser = Math.ceil(keys.length / clusterUsers.length)
-    // userKeys is an object that contains the keys that each user will reduce
-    const userKeys: { [key: UserID]: ReducerState['reduceKeys'] } = {} //TODO: check if string is the correct type, can be a serializable type
-    users.forEach((user) => {
-      userKeys[user] = {}
+    const keysPerNode = Math.ceil(keys.length / clusterNodes.length)
+    // nodeKeys is an object that contains the keys that each node will reduce
+    const nodeKeys: { [key: NodeID]: ReducerState['reduceKeys'] } = {} //TODO: check if string is the correct type, can be a serializable type
+    nodes.forEach((node) => {
+      nodeKeys[node] = {}
     })
-    let userIndex = 0
+    let nodeIndex = 0
 
-    // Divide the keys between the users
-    for (let i = 0; i < keys.length; i += keysPerUser) {
-      userKeys[users[userIndex]] = Object.fromEntries(
-        keys.slice(i, i + keysPerUser).map((key) => [key, combineTotalCount[key]]),
+    // Divide the keys between the nodes
+    for (let i = 0; i < keys.length; i += keysPerNode) {
+      nodeKeys[nodes[nodeIndex]] = Object.fromEntries(
+        keys.slice(i, i + keysPerNode).map((key) => [key, combineTotalCount[key]]),
       )
-      userIndex++
+      nodeIndex++
     }
 
-    const findUserWithKey = (key: string) =>
-      Object.keys(userKeys).find((user) => !!userKeys[user as UserID][key]) as UserID
+    const findNodeWithKey = (key: string) =>
+      Object.keys(nodeKeys).find((node) => !!nodeKeys[node as NodeID][key]) as NodeID
 
-    // sendKeys is an object that contains the keys that each user will send to another user
-    const sendKeys: { [user: UserID]: ReducerState['sendKeys'] } = {}
+    // sendKeys is an object that contains the keys that each node will send to another node
+    const sendKeys: { [node: NodeID]: ReducerState['sendKeys'] } = {}
 
-    users.forEach((user) => {
-      sendKeys[user] = {}
-      Object.keys(mapReduceState.combineResults[user]).forEach((key) => {
-        if (!userKeys[user][key]) {
-          let userWithKey = findUserWithKey(key)
-          const userSendKeys = (sendKeys[user] as ReducerState['sendKeys']) || {}
-          if (userSendKeys[userWithKey]) {
-            userSendKeys[userWithKey].push(key)
+    nodes.forEach((node) => {
+      sendKeys[node] = {}
+      Object.keys(mapReduceState.combineResults[node]).forEach((key) => {
+        if (!nodeKeys[node][key]) {
+          let nodeWithKey = findNodeWithKey(key)
+          const nodeSendKeys = (sendKeys[node] as ReducerState['sendKeys']) || {}
+          if (nodeSendKeys[nodeWithKey]) {
+            nodeSendKeys[nodeWithKey].push(key)
           } else {
-            userSendKeys[userWithKey] = [key]
+            nodeSendKeys[nodeWithKey] = [key]
           }
         }
       })
     })
 
-    // receiveKeysFrom is an object that contains the users that will receive keys from another user
-    const receiveKeysFrom: { [key: UserID]: UserID[] } = {}
+    // receiveKeysFrom is an object that contains the nodes that will receive keys from another node
+    const receiveKeysFrom: { [key: NodeID]: NodeID[] } = {}
 
-    // users that will send keys to another user
-    const usersToSendKeys = Object.keys(sendKeys) as UserID[]
-    usersToSendKeys.forEach((userFrom) => {
-      // users that will receive keys from userFrom
-      const usersTo = Object.keys(
-        (sendKeys[userFrom] as ReducerState['sendKeys']) || {},
-      ) as UserID[]
-      usersTo.forEach((userTo) => {
-        if (!receiveKeysFrom[userTo]) {
-          receiveKeysFrom[userTo] = [userFrom]
+    // nodes that will send keys to another node
+    const nodesToSendKeys = Object.keys(sendKeys) as NodeID[]
+    nodesToSendKeys.forEach((nodeFrom) => {
+      // nodes that will receive keys from nodeFrom
+      const nodesTo = Object.keys(
+        (sendKeys[nodeFrom] as ReducerState['sendKeys']) || {},
+      ) as NodeID[]
+      nodesTo.forEach((nodeTo) => {
+        if (!receiveKeysFrom[nodeTo]) {
+          receiveKeysFrom[nodeTo] = [nodeFrom]
         } else {
-          receiveKeysFrom[userTo].push(userFrom)
+          receiveKeysFrom[nodeTo].push(nodeFrom)
         }
       })
     })
 
-    users.forEach((user) =>
-      sendDirectMessage(user, {
+    nodes.forEach((node) =>
+      sendDirectMessage(node, {
         type: 'EJECUTAR_REDUCE',
         payload: {
-          reduceKeys: userKeys[user] || {},
-          sendKeys: sendKeys[user] || {},
-          receiveKeysFrom: receiveKeysFrom[user] || [],
+          reduceKeys: nodeKeys[node] || {},
+          sendKeys: sendKeys[node] || {},
+          receiveKeysFrom: receiveKeysFrom[node] || [],
         },
       }),
     )
@@ -219,12 +219,12 @@ export default function Master() {
       ...prev,
       mapTotalCount,
       combineTotalCount,
-      reducerNodesCount: Object.keys(userKeys).filter(
-        (user) => Object.values(userKeys[user as UserID]).length > 0,
+      reducerNodesCount: Object.keys(nodeKeys).filter(
+        (node) => Object.values(nodeKeys[node as NodeID]).length > 0,
       ).length,
     }))
   }, [
-    clusterUsers.length,
+    clusterNodes.length,
     sendDirectMessage,
     mapReduceState.combineResults,
     finished,
@@ -242,13 +242,13 @@ export default function Master() {
 
   const processingButtonText = !isReady
     ? 'Iniciando Python...'
-    : !allUsersReady
+    : !allNodesReady
       ? 'Esperando a los nodos'
       : 'Iniciar procesamiento'
 
   return (
     <main className='flex min-h-screen flex-col items-center p-5'>
-      <Navbar title={`Administrando cluster #${roomSession?.roomID}`} />
+      <Navbar title={`Administrando cluster #${clusterSession?.clusterID}`} />
       <div className='flex flex-col lg:flex-row justify-center w-full gap-10 mb-5'>
         <div className='w-full'>
           <BasicAccordion
@@ -307,7 +307,7 @@ export default function Master() {
               onClick={handleIniciarProcesamiento}
               loading={loading}
               loadingPosition='center'
-              disabled={!allUsersReady || loading || !isReady}>
+              disabled={!allNodesReady || loading || !isReady}>
               {processingButtonText}
             </LoadingButton>
 
@@ -321,7 +321,7 @@ export default function Master() {
                   dispatchMapReduce({ type: 'RESET_READY_TO_EXECUTE' })
                   resetState()
                   setIsLoading(false)
-                  toggleRoomLock(false)
+                  toggleClusterLock(false)
                 }}>
                 Detener ejecución
               </Button>

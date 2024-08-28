@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { FinalResults, KeyValue, KeyValues, MapCombineResults, Sizes, UserID } from '@/types'
+import { FinalResults, KeyValue, KeyValues, MapCombineResults, Sizes, NodeID } from '@/types'
 
 import { placeholdersFunctions } from '@/constants/functionCodes'
 
@@ -14,7 +14,7 @@ import useFiles from '@/hooks/useFiles'
 import useMapReduce from '@/hooks/useMapReduce'
 import usePeers from '@/hooks/usePeers'
 import { usePythonCodeValidator } from '@/hooks/usePythonCodeValidator'
-import useRoom from '@/hooks/useRoom'
+import useCluster from '@/hooks/useCluster'
 import useStatistics from '@/hooks/useStatisticts'
 import { useExecutionStatus } from '@/hooks/useExecutionStatus'
 
@@ -48,7 +48,7 @@ const editorProps = {
 }
 
 export default function Slave() {
-  const { roomOwner, roomSession, setIsReadyToExecute, isReadyToExecute } = useRoom()
+  const { clusterMaster, clusterSession, setIsReadyToExecute, isReadyToExecute } = useCluster()
 
   const { sendDirectMessage, broadcastMessage } = usePeers()
 
@@ -219,7 +219,7 @@ export default function Slave() {
           mapResults: finalResults.mapTotalCount,
         },
       }
-      sendDirectMessage(roomOwner?.userID as UserID, data)
+      sendDirectMessage(clusterMaster?.nodeID as NodeID, data)
 
       setExecuting(false)
     }
@@ -236,7 +236,7 @@ export default function Slave() {
     mapReduceState.code.reduceCode,
     readFile,
     readSizes,
-    roomOwner?.userID,
+    clusterMaster?.nodeID,
     runPython,
     selectedFiles,
     sendDirectMessage,
@@ -247,7 +247,7 @@ export default function Slave() {
   ])
 
   useEffect(() => {
-    // That means that the combine has been executed. Now we can send the keys to the other users (reducers)
+    // That means that the combine has been executed. Now we can send the keys to the other nodes (reducers)
     if (finished || executionStopped.current) return
     if (!mapCombineExecuted) return
     if (keysSent) return
@@ -261,19 +261,19 @@ export default function Slave() {
     let totalKeysSent = 0
     let totalValuesSent = 0
     let totalBytesSent = 0
-    Object.entries(mapReduceState.sendKeys).forEach(([user, keys]) => {
+    Object.entries(mapReduceState.sendKeys).forEach(([node, keys]) => {
       totalKeysSent += keys.length
       totalValuesSent += keys.reduce(
         (acc, key) => acc + mapCombineResults.combineResults[key].length,
         0,
       )
 
-      const keysForUser: { [key: string]: unknown[] } = {}
-      keys.forEach((key) => (keysForUser[key] = mapCombineResults.combineResults[key]))
+      const keysForNode: { [key: string]: unknown[] } = {}
+      keys.forEach((key) => (keysForNode[key] = mapCombineResults.combineResults[key]))
 
-      totalBytesSent += sendDirectMessage(user as UserID, {
+      totalBytesSent += sendDirectMessage(node as NodeID, {
         type: 'RECIBIR_CLAVES',
-        payload: keysForUser,
+        payload: keysForNode,
       })
     })
 
@@ -294,7 +294,7 @@ export default function Slave() {
   ])
 
   useEffect(() => {
-    // That useEffect will be executed when all the reducers (users) have sent their keys to the actual user. The map combine has been executed.
+    // That useEffect will be executed when all the reducers (nodes) have sent their keys to the actual node. The map combine has been executed.
 
     if (executing || executionStopped.current) return
 
@@ -304,7 +304,7 @@ export default function Slave() {
     if (!keysSent) return
     // Check if the python module is ready to execute the reduce phase.
     if (!isReady) return
-    // Check if all the keys have been received from the other users.
+    // Check if all the keys have been received from the other nodes.
     if (!mapReduceState?.receiveKeysFrom) return
     if (
       !(
@@ -314,7 +314,7 @@ export default function Slave() {
     )
       return
 
-    //  Combine all the keys received from the other users
+    //  Combine all the keys received from the other nodes
     const newCombineResults = { ...mapCombineResults.combineResults }
     let totalKeysReceived = 0
     let totalValuesReceived = 0
@@ -333,7 +333,7 @@ export default function Slave() {
       totalBytesReceived: mapReduceState.sizes.totalBytesReceived,
     }
 
-    // Discard the keys that the user will not reduce
+    // Discard the keys that the node will not reduce
     const newReduceKeys: KeyValues = {}
     Object.keys(mapReduceState.reduceKeys).forEach(
       (key) => (newReduceKeys[key] = newCombineResults[key]),
@@ -356,7 +356,7 @@ export default function Slave() {
 
       const reduceSizes = await readSizes()
 
-      sendDirectMessage(roomOwner?.userID as UserID, {
+      sendDirectMessage(clusterMaster?.nodeID as NodeID, {
         type: 'RESULTADO_FINAL',
         payload: {
           incrementReducerNodes: isReducerNode,
@@ -384,7 +384,7 @@ export default function Slave() {
     isReady,
     mapCombineExecuted,
     mapReduceState.errors,
-    roomOwner,
+    clusterMaster,
     mapReduceState.clavesRecibidas,
     mapReduceState.receiveKeysFrom,
     mapReduceState.reduceKeys,
@@ -404,7 +404,7 @@ export default function Slave() {
 
   return (
     <main className='flex min-h-screen flex-col items-center p-5'>
-      <Navbar title={`Unido al cluster #${roomSession?.roomID}`} />
+      <Navbar title={`Unido al cluster #${clusterSession?.clusterID}`} />
 
       <div className='w-full flex flex-col'>
         <div className='flex flex-col lg:flex-row justify-center w-full gap-10 mb-5'>
@@ -447,7 +447,7 @@ export default function Slave() {
               <InputSelector
                 enableEditing={!isReadyToExecute}
                 isMaster={false}
-                id={socket.userID}
+                id={socket.nodeID}
               />
 
               <Button

@@ -1,6 +1,6 @@
 'use client'
 
-import { UserID } from '@/types'
+import { NodeID } from '@/types'
 
 import { ENVS } from '@/constants/envs'
 
@@ -18,7 +18,7 @@ const MAX_SIZE_MB = MAX_SIZE / 1024 / 1024
 
 type InputSelectorProps = {
   enableEditing: boolean
-  id: UserID
+  id: NodeID
   forwardRef?: React.RefObject<HTMLInputElement>
 }
 
@@ -52,7 +52,7 @@ export default function InputSelector({
   enableEditing,
   isMaster,
 }: {
-  id: UserID
+  id: NodeID
   enableEditing: boolean
   isMaster: boolean
 }) {
@@ -98,7 +98,7 @@ export default function InputSelector({
 
       <Tooltip
         TransitionComponent={Zoom}
-        title={`Deben ser ${ACCEPT_TYPE.join(" / ")} de máximo ${MAX_SIZE_MB}Mb cada uno`}>
+        title={`Deben ser ${ACCEPT_TYPE.join(' / ')} de máximo ${MAX_SIZE_MB}Mb cada uno`}>
         <label htmlFor={`fileInput-${id}`}>
           <InputSelectorComponent enableEditing={enableEditing} id={id} forwardRef={inputRef} />
         </label>

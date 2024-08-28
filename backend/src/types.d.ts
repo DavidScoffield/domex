@@ -1,30 +1,30 @@
 import { type UUID } from 'crypto'
 
 export type Session = {
-  userName: string
-  userID: UserID
+  nodeName: string
+  nodeID: NodeID
   socketConnected: boolean
-  isRoomOwner: boolean
+  isMaster: boolean
 }
 
-export type RoomID = `${string & { length: 10 }}`
+export type ClusterID = `${string & { length: 10 }}`
 export type SessionID = UUID
-export type UserID = UUID
+export type NodeID = UUID
 
-export type RoomSessions = Map<SessionID, Session>
+export type ClusterSessions = Map<SessionID, Session>
 
-export type Room = {
-  sessions: RoomSessions
+export type Cluster = {
+  sessions: ClusterSessions
   locked: boolean
 }
 
-export type Rooms = Map<RoomID, Room>
+export type Clusters = Map<ClusterID, Cluster>
 
 export type ReturningSignalParams = {
-  callerID: UserID
+  callerID: NodeID
   signal: SignalData
 }
 
 export type SendingSignalParams = ReturningSignalParams & {
-  userToSignal: UserID
+  nodeToSignal: NodeID
 }

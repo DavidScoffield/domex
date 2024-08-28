@@ -1,6 +1,6 @@
 'use client'
 
-import useRoom from '@/hooks/useRoom'
+import useCluster from '@/hooks/useCluster'
 import { generateInitialsAvatar } from '@/lib/avatars'
 import { LogoutRounded as LogoutRoundedIcon } from '@mui/icons-material'
 import AccountCircle from '@mui/icons-material/AccountCircle'
@@ -27,21 +27,21 @@ const AvatarImage = ({
 }
 
 export default function Navbar({ title }: { title: string }) {
-  const { roomSession, leaveRoom } = useRoom()
+  const { clusterSession, leaveCluster } = useCluster()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isLoadingAvatar, setIsLoadingAvatar] = useState(true)
 
-  const isRoomOwner = roomSession?.isRoomOwner
-  const userName = roomSession?.userName
+  const isMaster = clusterSession?.isMaster
+  const nodeName = clusterSession?.nodeName
 
   useEffect(() => {
-    if (!userName) return
+    if (!nodeName) return
 
     setIsLoadingAvatar(true)
-    generateInitialsAvatar(userName)
+    generateInitialsAvatar(nodeName)
       .then(setAvatarUrl)
       .finally(() => setIsLoadingAvatar(false))
-  }, [userName])
+  }, [nodeName])
 
   return (
     <Box sx={{ width: '100%', mb: 5 }}>
@@ -55,7 +55,7 @@ export default function Navbar({ title }: { title: string }) {
             <MenuButton
               variant='plain'
               size='sm'
-              aria-label='account of current user'
+              aria-label='account of current node'
               aria-haspopup='true'
               sx={{
                 bgcolor: 'inherit',
@@ -68,7 +68,7 @@ export default function Navbar({ title }: { title: string }) {
                 padding: 0,
                 borderRadius: '50%',
               }}>
-              <AvatarImage isLoading={isLoadingAvatar} alt='username avatar' url={avatarUrl} />
+              <AvatarImage isLoading={isLoadingAvatar} alt='nodename avatar' url={avatarUrl} />
             </MenuButton>
             <Menu
               placement='bottom-end'
@@ -85,21 +85,21 @@ export default function Navbar({ title }: { title: string }) {
                     display: 'flex',
                     alignItems: 'center',
                   }}>
-                  <AvatarImage isLoading={isLoadingAvatar} alt='username avatar' url={avatarUrl} />
+                  <AvatarImage isLoading={isLoadingAvatar} alt='nodename avatar' url={avatarUrl} />
                   <Box sx={{ ml: 1.5 }}>
                     <Typography level='title-sm' textColor='text.primary'>
-                      {roomSession?.userName}
+                      {clusterSession?.nodeName}
                     </Typography>
                     <Typography level='body-xs' textColor='text.tertiary'>
-                      Nodo <strong>{isRoomOwner ? 'Master' : 'Slave'}</strong>
+                      Nodo <strong>{isMaster ? 'Master' : 'Slave'}</strong>
                     </Typography>
                   </Box>
                 </Box>
               </MenuItem>
               <ListDivider />
-              <MenuItem onClick={() => leaveRoom()}>
+              <MenuItem onClick={() => leaveCluster()}>
                 <LogoutRoundedIcon />
-                <span className='ml-2'>{isRoomOwner ? 'Cerrar cluster' : 'Abandonar cluster'}</span>
+                <span className='ml-2'>{isMaster ? 'Cerrar cluster' : 'Abandonar cluster'}</span>
               </MenuItem>
             </Menu>
           </Dropdown>

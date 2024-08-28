@@ -1,14 +1,14 @@
 import { type Server, type Socket } from 'socket.io'
-import { type RoomSessionStore } from '../store/RoomSessionStore.js'
+import { type ClusterSessionStore } from '../store/ClusterSessionStore.js'
 import { type ReturningSignalParams, type SendingSignalParams } from '../types.js'
 
 export default function registerWebRTC(
   io: Server,
   socket: Socket,
-  roomsSessionStore: RoomSessionStore,
+  clustersSessionStore: ClusterSessionStore,
 ): void {
-  socket.on('webrtc:sending-signal', ({ userToSignal, signal, callerID }: SendingSignalParams) => {
-    io.to(userToSignal).emit('webrtc:user-joined', {
+  socket.on('webrtc:sending-signal', ({ nodeToSignal, signal, callerID }: SendingSignalParams) => {
+    io.to(nodeToSignal).emit('webrtc:node-joined', {
       signal,
       callerID,
     })
@@ -17,7 +17,7 @@ export default function registerWebRTC(
   socket.on('webrtc:returning-signal', ({ callerID, signal }: ReturningSignalParams) => {
     io.to(callerID).emit('webrtc:receiving-returned-signal', {
       signal,
-      userID: socket.userID,
+      nodeID: socket.nodeID,
     })
   })
 }

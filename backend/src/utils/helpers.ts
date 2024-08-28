@@ -1,14 +1,14 @@
 import crypto, { type UUID } from 'crypto'
-import { type RoomID } from '../types.js'
-import { ROOM_IDS_LENGTH } from '../constants/envVars.js'
+import { type ClusterID } from '../types.js'
+import { CLUSTER_IDS_LENGTH } from '../constants/envVars.js'
 
-export const generateRandomRoomId = (): RoomID => {
+export const generateRandomClusterId = (): ClusterID => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let roomId = ''
-  for (let i = 0; i < ROOM_IDS_LENGTH; i++) {
-    roomId += characters.charAt(Math.floor(Math.random() * characters.length))
+  let clusterId = ''
+  for (let i = 0; i < CLUSTER_IDS_LENGTH; i++) {
+    clusterId += characters.charAt(Math.floor(Math.random() * characters.length))
   }
-  return roomId as RoomID
+  return clusterId as ClusterID
 }
 
 export const generateRandomUUID = (): UUID => {

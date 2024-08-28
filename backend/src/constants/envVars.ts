@@ -4,4 +4,4 @@ export const HOST = process.env.HOST ?? 'localhost'
 export const HTTPS = process.env.HTTPS === 'true'
 export const SERVER_KEY_NAME = process.env.SERVER_KEY_NAME ?? 'server.key'
 export const SERVER_CERT_NAME = process.env.SERVER_CERT_NAME ?? 'server.crt'
-export const ROOM_IDS_LENGTH = Number(process.env.ROOM_IDS_LENGTH) || 10
+export const CLUSTER_IDS_LENGTH = Number(process.env.CLUSTER_IDS_LENGTH) || 10

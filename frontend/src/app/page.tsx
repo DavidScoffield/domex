@@ -1,48 +1,48 @@
 'use client'
 
-import useInitializeRoom from '@/hooks/useInitializeRoom'
-import useRoom from '@/hooks/useRoom'
-import { RoomID } from '@/types'
+import useInitializeCluster from '@/hooks/useInitializeCluster'
+import useCluster from '@/hooks/useCluster'
+import { ClusterID } from '@/types'
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material'
 import { Avatar } from '@mui/joy'
 import { Button, TextField, Typography } from '@mui/material'
 import { useRef, useState } from 'react'
 
 export default function Home() {
-  useInitializeRoom()
-  const { joinCluster } = useRoom()
-  const [missingUserName, setMissingUserName] = useState(false)
+  useInitializeCluster()
+  const { joinCluster } = useCluster()
+  const [missingNodeName, setMissingNodeName] = useState(false)
   const [missingClusterId, setMissingClusterId] = useState(false)
 
-  const userRef = useRef<HTMLInputElement>(null)
+  const nodeRef = useRef<HTMLInputElement>(null)
   const clusterIDRef = useRef<HTMLInputElement>(null)
 
   const handleCreateCluster = () => {
-    const userName = userRef.current?.value
-    setMissingUserName(!userName)
+    const nodeName = nodeRef.current?.value
+    setMissingNodeName(!nodeName)
 
-    if (!userName) return
+    if (!nodeName) return
 
     joinCluster({
-      userName: userName,
-      roomID: clusterIDRef.current?.value as RoomID,
+      nodeName: nodeName,
+      clusterID: clusterIDRef.current?.value as ClusterID,
       creatingCluster: true,
     })
   }
 
   const handleSubmitJoinCluster = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const userName = userRef.current?.value
+    const nodeName = nodeRef.current?.value
     const clusterID = clusterIDRef.current?.value
 
-    setMissingUserName(!userName)
+    setMissingNodeName(!nodeName)
     setMissingClusterId(!clusterID)
 
-    if (!userName || !clusterID) return
+    if (!nodeName || !clusterID) return
 
     joinCluster({
-      userName: userName,
-      roomID: clusterID as RoomID,
+      nodeName: nodeName,
+      clusterID: clusterID as ClusterID,
       creatingCluster: false,
     })
   }
@@ -59,17 +59,17 @@ export default function Home() {
 
         <div className='pb-5 max-w-xs'>
           <TextField
-            label='Usuario*'
-            inputRef={userRef}
-            helperText={missingUserName ? 'Usuario necesario' : ''}
-            error={missingUserName}
+            label='Identificador del nodo*'
+            inputRef={nodeRef}
+            helperText={missingNodeName ? 'Por favor complete este campo' : ''}
+            error={missingNodeName}
           />
         </div>
         <div className='flex gap-5'>
           <form className='flex gap-5 flex-col' onSubmit={handleSubmitJoinCluster}>
             <TextField
-              label='Indentificador de cluster'
-              helperText={missingClusterId ? 'Identificador de cluster necesario' : ''}
+              label='Indentificador del cluster'
+              helperText={missingClusterId ? 'Por favor complete este campo' : ''}
               error={missingClusterId}
               inputRef={clusterIDRef}
             />

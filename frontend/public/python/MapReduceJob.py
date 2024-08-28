@@ -33,11 +33,11 @@ def write_keys(dict_to_write: dict, file_name: str):
 
     return os.path.getsize(file_name)
 
-def save_statistics(statistis: dict):
+def save_statistics(statistics: dict):
     """Guarda las estadísticas en un archivo JSON"""
 
-    with open('/sizes.json', 'w') as statistis_file:
-        json.dump(statistis, statistis_file)
+    with open('/sizes.json', 'w') as statistics_file:
+        json.dump(statistics, statistics_file)
 
 def clean_up():
     """Elimina archivos temporales"""

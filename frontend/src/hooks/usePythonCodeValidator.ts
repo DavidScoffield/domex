@@ -1,12 +1,12 @@
 'use client'
 
-import { Code, UserID } from '@/types'
+import { Code, NodeID } from '@/types'
 import { validatePythonCode, isValidFunctionHeader, mergeStrings } from '@/utils/helpers'
 import { usePython } from 'react-py'
 import useMapReduce from '@/hooks/useMapReduce'
 import { Action, initialOutput } from '@/context/MapReduceContext'
 import usePeers from '@/hooks/usePeers'
-import useRoom from '@/hooks/useRoom'
+import useCluster from '@/hooks/useCluster'
 import { useCallback, useEffect, useState } from 'react'
 import useFiles from '@/hooks/useFiles'
 import { CONFIG } from '@/constants/config'
@@ -19,7 +19,7 @@ export const usePythonCodeValidator = (executionStopped: boolean = false) => {
 
   const { sendDirectMessage } = usePeers()
 
-  const { roomOwner } = useRoom()
+  const { clusterMaster } = useCluster()
 
   const [stdoutHistory, setStdoutHistory] = useState({
     stdout: '',
@@ -82,7 +82,7 @@ export const usePythonCodeValidator = (executionStopped: boolean = false) => {
     const executed = [...mapExecuted, ...combineExecuted, ...reduceExecuted]
 
     if (executed.length)
-      sendDirectMessage(roomOwner?.userID as UserID, {
+      sendDirectMessage(clusterMaster?.nodeID as NodeID, {
         type: 'SET_STDOUT',
         payload: executed.join('\n'),
       })
@@ -102,7 +102,7 @@ export const usePythonCodeValidator = (executionStopped: boolean = false) => {
     executionStopped,
     mapReduceState.reduceKeys,
     nodeHasFiles,
-    roomOwner?.userID,
+    clusterMaster?.nodeID,
     sendDirectMessage,
     stdoutHistory,
     stdoutHistory.newStdout,
@@ -135,7 +135,7 @@ export const usePythonCodeValidator = (executionStopped: boolean = false) => {
 
     dispatchMapReduce(action)
 
-    sendDirectMessage(roomOwner?.userID as UserID, action)
+    sendDirectMessage(clusterMaster?.nodeID as NodeID, action)
   }
 
   const hasErrors = (stderr: Code) => Object.values(stderr).some((error) => !!error)

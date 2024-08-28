@@ -4,37 +4,37 @@ import type SimplePeer from 'simple-peer'
 // Extend the interface
 declare module 'socket.io-client' {
   interface Socket {
-    userID: UserID
+    nodeID: NodeID
   }
 }
 
-export type RoomSession = {
+export type ClusterSession = {
   sessionID: SessionID
-  roomID: RoomID
-  userName: string
-  isRoomOwner: boolean
+  clusterID: ClusterID
+  nodeName: string
+  isMaster: boolean
 }
 
-export type BaseUser = {
-  userID: UserID
-  userName: string
+export type BaseNode = {
+  nodeID: NodeID
+  nodeName: string
   socketConnected: boolean
   peerConnected?: boolean
-  isRoomOwner: boolean
+  isMaster: boolean
 }
 
-export type User = BaseUser & {
+export type Node = BaseNode & {
   readyToExecuteMap: boolean
   executionStatus: string
 }
 
 export type Peers = {
-  [userID: UserID]: SimplePeer.Instance
+  [nodeID: NodeID]: SimplePeer.Instance
 }
 
-export type RoomID = `${string & { length: 10 }}`
+export type ClusterID = `${string & { length: 10 }}`
 export type SessionID = UUID
-export type UserID = UUID
+export type NodeID = UUID
 
 export type Code = {
   mapCode: string
@@ -49,8 +49,8 @@ export type Output = {
 
 export type ReducerState = {
   code: Code
-  combineResults: UserResults
-  mapResults: UserResults
+  combineResults: NodeResults
+  mapResults: NodeResults
   reduceKeys: KeyValuesCount
   reduceResult: KeyValue
   sizes: Sizes
@@ -69,10 +69,10 @@ export type ReducerState = {
     minReduceTime: number
     totalTime: number
   }
-  clavesRecibidas: { [user: UserID]: { [innerKey: string]: unknown[] } }
-  receiveKeysFrom: UserID[] | null
+  clavesRecibidas: { [node: NodeID]: { [innerKey: string]: unknown[] } }
+  receiveKeysFrom: NodeID[] | null
   sendKeys: null | {
-    [userToSendKeys: UserID]: string[]
+    [nodeToSendKeys: NodeID]: string[]
   }
   mapNodesCount: int
   finishedMapNodes: int
@@ -90,8 +90,8 @@ export type KeyValuesCount = {
   [innerKey: string]: number
 }
 
-export type UserResults = {
-  [user: UserID]: KeyValuesCount
+export type NodeResults = {
+  [node: NodeID]: KeyValuesCount
 }
 
 export type KeyValues = {
@@ -145,6 +145,6 @@ export type Tree = {
   isFolder: boolean
   isLocal?: boolean
   name: string
-  ownerId: UserID
+  ownerId: NodeID
   items?: Tree[]
 }

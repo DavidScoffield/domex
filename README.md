@@ -69,7 +69,7 @@ NEXT_PUBLIC_ICESERVER=
 NEXT_PUBLIC_SERVER_URL=
 
 # Backend
-ROOM_IDS_LENGTH=
+CLUSTER_IDS_LENGTH=
 ```
 
 #### + PRIVATE_IP:
@@ -126,23 +126,9 @@ El valor `local` no utiliza un servidor de señalización externo, mientras que 
 
 URL del servidor para que la aplicación web pueda conectarse a la API REST y WebSocket del backend.
 
-#### + ROOM_IDS_LENGTH:
+#### + CLUSTER_IDS_LENGTH:
 
-Longitud de los identificadores de las salas de chat. Por defecto, el valor es `5`. Se utiliza para generar identificadores de salas de chat únicos.
-
-<!--
-## Usage
-
-Provide instructions on how to use the application or any relevant commands.
-
-## Contributing
-
-Explain how others can contribute to the project.
-
-## License
-
-Specify the license under which the project is distributed.
--->
+Longitud de los identificadores de los clusters. Por defecto, el valor es `5`.
 
 ## Arquitectura
 
@@ -154,4 +140,4 @@ El frontend de la aplicación es una aplicación web desarrollada con [Next.js](
 
 ### Backend
 
-El backend de la aplicación es un servidor desarrollado con [Express.js](https://expressjs.com/) que se encarga de gestionar las salas de chat y la comunicación como servidor de señalización para WebRTC.
+El backend de la aplicación es un servidor desarrollado con [Express.js](https://expressjs.com/) que se encarga de gestionar los clusters y la comunicación como servidor de señalización para WebRTC.

@@ -35,7 +35,7 @@ WORKDIR /app
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 express
-# Give the user the permission to write to the /app directory
+# Give the node the permission to write to the /app directory
 RUN chown -R express:nodejs .
 USER express
 

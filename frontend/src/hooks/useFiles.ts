@@ -58,10 +58,12 @@ const useFiles = (loading: boolean = false) => {
     [nodesFileTree, ownFileTree, clusterSession?.isMaster],
   )
 
-  const [mapNodesCount, setMapNodesCount] = useState(fileTrees.length)
+  const [mapNodesCount, setMapNodesCount] = useState(0)
 
   useEffect(() => {
-    setMapNodesCount((mapNodesCount) => (loading ? fileTrees.length : mapNodesCount))
+    setMapNodesCount((mapNodesCount) =>
+      loading ? fileTrees.filter((filteTree) => filteTree.items?.length).length : mapNodesCount,
+    )
   }, [fileTrees, loading])
 
   useEffect(() => {

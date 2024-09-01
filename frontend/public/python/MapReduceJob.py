@@ -59,17 +59,26 @@ def safe_execute(phase):
 
             result = phase(self)                                                       # se ejecuta la etapa
 
-            self.statistics.update(                                                    # se guardan las estadísticas de la etapa
+            elapsed_time = time.perf_counter_ns() - start_time
+            
+            output_size = write_keys(self.current_results, f'/{phase_name}_results.json')
+            
+            if self.invocations:
+                print(f"{phase_name.upper()} EJECUTADO SATISFACTORIAMENTE")            # se imprime un mensaje de éxito
+                input_size = self.input_size
+            else:
+                elapsed_time = 0
+                input_size = 0
+                output_size = 0
+
+            self.statistics.update(                             # se guardan las estadísticas de la etapa
                 {
-                    f'{phase_name}Time': time.perf_counter_ns() - start_time,                               # tiempo de ejecución
-                    f'{phase_name}Count': self.invocations,                                                 # cantidad de invocaciones
-                    f'{phase_name}Input': self.input_size,                                                  # tamaño de la entrada
-                    f'{phase_name}Output': write_keys(self.current_results, f'/{phase_name}_results.json')  # se escriben los resultados de la etapa y se obtiene el tamaño
+                    f'{phase_name}Time': elapsed_time,          # tiempo de ejecución
+                    f'{phase_name}Count': self.invocations,     # cantidad de invocaciones
+                    f'{phase_name}Input': input_size,           # tamaño de la entrada
+                    f'{phase_name}Output': output_size          # se escriben los resultados de la etapa y se obtiene el tamaño
                 }
             )
-
-            if self.execute_phase:
-                print(f"{phase_name.upper()} EJECUTADO SATISFACTORIAMENTE")                # se imprime un mensaje de éxito
 
             return result
         except Exception as e:
